@@ -3,11 +3,17 @@ services:
     build: .
     ports:
       - "8080:8080"
-    env_file:
-      - .env
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/urlshortener?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      PORT: "8080"
+      BASE_URL: http://localhost:8080
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: on-failure
 
   postgres:
     image: postgres:16-alpine
@@ -19,6 +25,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d urlshortener"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7-alpine

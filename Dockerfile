@@ -1,12 +1,12 @@
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
 COPY go.mod go.sum ./
-RUN go mod download
-
+COPY vendor/ vendor/
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o server ./cmd/server
+
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -o server ./cmd/server
 
 FROM alpine:latest
 
