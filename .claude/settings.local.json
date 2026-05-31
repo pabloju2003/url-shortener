@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Read(//mnt/c/Users/Pablo/Desktop/PFF/**)",
-      "Bash(go mod *)"
-    ]
-  }
-}

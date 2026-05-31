@@ -14,6 +14,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/pabloju2003/url-shortener/internal/handler"
+	"github.com/pabloju2003/url-shortener/internal/middleware"
+	"github.com/pabloju2003/url-shortener/internal/ratelimit"
 	"github.com/pabloju2003/url-shortener/internal/repository"
 	"github.com/pabloju2003/url-shortener/internal/service"
 	"github.com/pabloju2003/url-shortener/migrations"
@@ -83,10 +85,12 @@ func main() {
 
 	r := gin.Default()
 
+	rl := ratelimit.NewIPRateLimiter(10, 20)
+
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
-	r.POST("/shorten", h.Shorten)
+	r.POST("/shorten", middleware.RateLimitMiddleware(rl), h.Shorten)
 	r.GET("/stats/:code", h.Stats)
 	r.GET("/:code", h.Redirect)
 
