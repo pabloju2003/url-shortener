@@ -13,6 +13,9 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/pabloju2003/url-shortener/internal/handler"
+	"github.com/pabloju2003/url-shortener/internal/repository"
+	"github.com/pabloju2003/url-shortener/internal/service"
 	"github.com/pabloju2003/url-shortener/migrations"
 	"github.com/redis/go-redis/v9"
 )
@@ -73,14 +76,19 @@ func main() {
 	}
 	log.Println("connected to redis")
 
-	_ = db
-	_ = rdb
+	repo := repository.NewPostgresURLRepository(db)
+	cache := repository.NewRedisCache(rdb)
+	svc := service.NewURLService(repo, cache)
+	h := handler.NewURLHandler(svc)
 
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+	r.POST("/shorten", h.Shorten)
+	r.GET("/stats/:code", h.Stats)
+	r.GET("/:code", h.Redirect)
 
 	port := os.Getenv("PORT")
 	if port == "" {
