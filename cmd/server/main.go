@@ -8,10 +8,36 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/pabloju2003/url-shortener/migrations"
 	"github.com/redis/go-redis/v9"
 )
+
+func runMigrations(db *pgxpool.Pool) {
+	src, err := iofs.New(migrations.FS, ".")
+	if err != nil {
+		log.Fatalf("failed to load migration source: %v", err)
+	}
+
+	dbURL := os.Getenv("DATABASE_URL")
+	// golang-migrate pgx/v5 driver expects pgx5:// scheme
+	migrateURL := "pgx5://" + dbURL[len("postgres://"):]
+
+	m, err := migrate.NewWithSourceInstance("iofs", src, migrateURL)
+	if err != nil {
+		log.Fatalf("failed to create migrator: %v", err)
+	}
+	defer m.Close()
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("migration failed: %v", err)
+	}
+	log.Println("Migrations applied successfully")
+}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -31,6 +57,8 @@ func main() {
 		log.Fatalf("postgres ping failed: %v", err)
 	}
 	log.Println("connected to postgres")
+
+	runMigrations(db)
 
 	redisURL := os.Getenv("REDIS_URL")
 	opts, err := redis.ParseURL(redisURL)
