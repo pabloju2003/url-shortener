@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-migrate/migrate/v4"
@@ -29,8 +30,15 @@ func runMigrations(db *pgxpool.Pool) {
 	}
 
 	dbURL := os.Getenv("DATABASE_URL")
-	// golang-migrate pgx/v5 driver expects pgx5:// scheme
-	migrateURL := "pgx5://" + dbURL[len("postgres://"):]
+	var migrateURL string
+	switch {
+	case strings.HasPrefix(dbURL, "pgx5://"):
+		migrateURL = dbURL
+	case strings.HasPrefix(dbURL, "postgresql://"):
+		migrateURL = "pgx5://" + dbURL[len("postgresql://"):]
+	default:
+		migrateURL = "pgx5://" + dbURL[len("postgres://"):]
+	}
 
 	m, err := migrate.NewWithSourceInstance("iofs", src, migrateURL)
 	if err != nil {
