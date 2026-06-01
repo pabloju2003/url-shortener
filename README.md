@@ -79,6 +79,17 @@ Two Go concurrency patterns are used in this project:
 
 **Token bucket rate limiter**: built from scratch using a buffered channel as the token store and a goroutine that refills it at a fixed rate. No external libraries — just Go primitives.
 
+## Live demo
+
+The API is live at: https://url-shortener-production-dab7.up.railway.app
+
+Try it:
+```bash
+curl -X POST https://url-shortener-production-dab7.up.railway.app/shorten \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://github.com/pabloju2003"}'
+```
+
 ## Getting started
 
 ### Prerequisites
